@@ -32,7 +32,7 @@ export function StrategyB({ d }: { d: Dashboard }) {
         <Tile label="switches" value={String(b.switches)} sub={annual ? `${Math.round(b.switches_yr ?? 0)}/yr annualised, backtest ~${th.backtest_b_switches_yr}, review >${th.b_switch_max_yr}` : `${b.days_logged} day row(s); backtest ~${th.backtest_b_switches_yr}/yr`} />
         <Tile label="fees paid" value={`${usd(b.fees)} USDT`} sub="0.10% assumed per switch in the backtest" />
         <Tile label="avg slippage" value={`real ${bp(b.slip_real, 2)}`} sub={`demo ${bp(b.slip_demo, 2)} | negative = better than mid`} />
-        <Tile label="runs" value={`${b.days_logged} day(s) logged`} sub={`${b.no_trade} no-trade, ${b.late_runs} late (>30 min), ${b.incomplete} incomplete`} />
+        <Tile label="days logged" value={String(b.days_logged)} sub={`${b.no_trade} no-trade, ${b.late_runs} late (>30 min), ${b.incomplete} incomplete`} />
       </div>
       <EquityChart
         title="B: paper equity vs the backtest maths on the same days (growth since paper start)"
