@@ -321,3 +321,15 @@ with one point). Vendor code is split into `vendor-charts` / `vendor` chunks.
 **Not done / ideas:** a date-range filter row (the dataviz guidance wants presets above the charts: trivial once
 there are more than a few days of data); a "monthly live vs backtest" table (same gap as the HTML); hosting `dist/`
 somewhere reachable from the phone (any static host; the JSON would need copying there daily).
+
+**Later the same night (23:30-23:40 UTC): README, design pass, git, GitHub.**
+- `README.md` rewritten as a short purpose + get-started page with a Guides table linking every other document.
+- Front end given a quieter visual system (translucent header with pill nav and an Auto/Light/Dark segmented control,
+  a "Right now" hero card, inset tiles and tables, hairlines instead of borders); checked in both themes.
+- Git repository initialised on `main` (git and `gh` live in WSL, not Windows; `core.filemode false`,
+  `.gitattributes` normalises line endings). Excluded by `.gitignore`: node_modules, dist, caches, the daily
+  dashboard html/json and logs, dry-run state, `btc_1h.csv.bak`, the zip snapshot, `_to_delete/`, the WSL
+  transcript, `.claude/`. Commits are authored with the GitHub no-reply address.
+- **Public GitHub repository: https://github.com/damiandamian181061-bit/btc-strategy-project** (created and pushed
+  16 Nov 2026 ~23:36 UTC, Damian chose public). Routine: in WSL, `git add -A && git commit -m "..." && git push`.
+  The paper logs under `data/paper/*.csv` are tracked, so a commit after a run records the day's rows.
