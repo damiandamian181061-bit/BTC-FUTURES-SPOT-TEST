@@ -1,0 +1,7 @@
+ts_utc,day,strategy,venue,event,order_id,client_id,side,type,post_only,reduce_only,price,qty,filled,avg_price,status,demo_bid,demo_ask,real_bid,real_ask,note
+2026-11-16T21:44:53Z,2026-11-16,TEST,futures,test placed,28683381724,,BUY,,True,False,62030.8,0.001,,,,65295.6,65295.9,65277.4,65277.5,
+2026-11-16T21:44:59Z,2026-11-16,TEST,futures,test cancelled,28683381724,,BUY,,True,False,,,0,,,,,65276.1,65276.2,
+2026-11-16T21:45:02Z,2026-11-16,TEST,spot,test placed,83891833228,,BUY,,True,False,62047.35,0.0001,,,,65313,65313.01,65313,65313.01,
+2026-11-16T21:45:09Z,2026-11-16,TEST,spot,test cancelled,83891833228,,BUY,,True,False,,,0,,,,,65324.21,65324.22,
+2026-11-16T21:58:09Z,2026-11-16,B,spot,placed,83894415923,,SELL,,True,False,65294.35,0.05,,,,65294.34,65294.35,65294.34,65294.35,
+2026-11-16T21:58:14Z,2026-11-16,B,spot,filled,83894415923,,SELL,,True,False,,0.05,,,,,,65299.65,65299.66,

@@ -1,0 +1,12 @@
+ts_utc,command,day,dry_run,status,duration_s,note
+2026-11-16T21:41:56Z,setup,2026-11-16,False,OK,11.5,
+2026-11-16T21:45:09Z,a-test,2026-11-16,False,OK,24.5,
+2026-11-16T21:47:26Z,status,2026-11-16,False,OK,17.4,
+2026-11-16T21:58:14Z,b-check,2026-11-16,False,ERROR,19.7,ValueError: fee paid in BNB: turn off 'pay fees in BNB' on the demo account
+2026-11-16T22:01:51Z,relog,2026-11-16,False,OK,10.9,relogged 83894415923
+2026-11-16T22:02:11Z,status,2026-11-16,False,OK,13.9,
+2026-11-16T22:32:56Z,dashboard,2026-11-16,False,OK,0.5,html dashboard.html; missed runs 0; alerts 7d 2
+2026-11-16T22:36:18Z,dashboard,2026-11-16,False,OK,0.5,html dashboard.html; missed runs 0; alerts 7d 2
+2026-11-16T22:42:35Z,dashboard,2026-11-16,False,OK,0.6,html dashboard.html; missed runs 0; alerts 7d 2
+2026-11-16T23:01:23Z,dashboard,2026-11-16,False,OK,0.7,html dashboard.html; missed runs 0; alerts 7d 2
+2026-11-16T23:09:21Z,dashboard,2026-11-16,False,OK,0.6,html+json dashboard.html; missed runs 0; alerts 7d 2

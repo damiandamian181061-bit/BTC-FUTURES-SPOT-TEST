@@ -1,0 +1,2 @@
+ts_utc,day,strategy,venue,order_id,trade_id,side,price,qty,fee,fee_asset,fee_usdt,maker,realized_pnl,ref_real_mid,ref_demo_mid,slip_real_bp,slip_demo_bp
+2026-11-16T22:01:48Z,2026-11-16,B,spot,83894415923,347115732,SELL,65294.35,0.05,0.00412502,BNB,2.451664387,True,0,65294.345,65294.345,-0.000765763099,-0.000765763099
