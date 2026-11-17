@@ -1,52 +1,51 @@
-# frontend/ : the paper-trading dashboard app
+# frontend: the dashboard web app
 
-Vite + React + TypeScript. It renders `data/paper/dashboard.json`, which `code/dashboard.py` writes (by hand or by the
-23:10 UTC scheduled task). The app is read-only: it never talks to Binance and never places orders.
+Vite + React + TypeScript. It shows the paper-trading dashboard: signals, strategy B, strategy A, the combined result,
+the kill switches and the run history. It is read-only: it never talks to Binance and never places orders.
+
+## Where the numbers come from
+
+1. **The API** (`GET /api/dashboard`), which computes everything live from the paper logs. In Docker the API serves
+   this app on the same origin; in development Vite proxies `/api` to `http://127.0.0.1:8000`.
+2. **Fallback:** `data/dashboard.json`, the file the 23:10 UTC scheduled task writes. The header shows "live" or
+   "from file" so you know which one you are looking at.
+
+The app re-reads its data every minute. `src/types.ts` mirrors the JSON (schema 1, `payload()` in
+`backend/src/btc_bot/reporting/dashboard.py`).
+
+## Run it
+
+Everything at once, from the project root: `docker compose up -d --build`, then open http://127.0.0.1:8000.
+
+For front-end work with hot reload (Windows PowerShell or WSL; Node 24):
+
+```bash
+cd frontend
+npm install
+npm run dev          # http://127.0.0.1:5173 ; double-clicking dev.cmd does the same on Windows
+```
+Start the API too (`docker compose up -d` or `btc-bot api`) for live numbers; without it the app shows the file.
+
+```bash
+npm run build        # type-check + bundle into dist/ (also copies dashboard.json into dist/data/)
+```
+
+## Layout
 
 ```
-frontend/
-  index.html, src/main.tsx      entry
-  src/App.tsx                   header (nav, refresh, theme), section order, loading / error states
-  src/api.ts                    useDashboard(): fetches data/dashboard.json, re-reads it every minute
-  src/types.ts                  TypeScript mirror of the JSON (schema 1, see payload() in code/dashboard.py)
-  src/format.ts                 number / date formatting
-  src/theme.ts                  light / dark / system toggle (localStorage)
-  src/components/ui.tsx         Badge (status + icon), Tile, Section, DataTable, statusClass()
-  src/components/EquityChart.tsx Recharts line chart: paper vs expected vs buy & hold, crosshair tooltip
-  src/components/SignalBar.tsx, StrategyB.tsx, StrategyA.tsx, Combined.tsx, KillSwitches.tsx, Operations.tsx
-  src/styles.css                tokens (reference data-viz palette, validated for both themes) and layout
-  vite.config.ts                dev plugin that serves ../data/paper at /data; vendor chunking
-  scripts/copy-data.mjs         after `vite build`, copies dashboard.json into dist/data/
-  dev.cmd                       double-click to start the dev server on Windows
+src/App.tsx                     header (nav, refresh, theme), section order, loading and error states
+src/api.ts                      useDashboard(): API first, file fallback, polling
+src/types.ts                    TypeScript mirror of the dashboard JSON
+src/format.ts, src/theme.ts     number/date formatting; Auto/Light/Dark theme
+src/components/                 SignalBar, StrategyB, StrategyA, Combined, KillSwitches, Operations, EquityChart, ui
+src/styles.css                  design tokens and layout
+vite.config.ts                  /api proxy, /data dev middleware, vendor chunks
 ```
-
-## Run it (Windows PowerShell or a double-click; Node 24 is installed on the laptop)
-
-```powershell
-cd "C:\Users\damia\Documents\BTC Strategy Project\frontend"
-npm install          # once
-npm run dev          # http://127.0.0.1:5173  (or double-click dev.cmd)
-```
-The dev server reads the live `data/paper/dashboard.json`; refresh the data with `python3 code/dashboard.py` in WSL and
-the page picks it up within a minute (or press Refresh).
-
-```powershell
-npm run build        # type-check + bundle into dist/, then copies dashboard.json into dist/data/
-npm run preview      # serves dist/ for a look
-```
-`dist/` is a self-contained static site (relative paths) that any static server can host. It shows the JSON that was
-copied at build time, so rebuild (or copy a newer `dashboard.json` into `dist/data/`) to update it.
-
-## Changing the numbers
-
-The front end formats; it does not compute. Add a number to `payload()` in `code/dashboard.py`, mirror it in
-`src/types.ts`, render it in the matching component. `code/test_dashboard.py` (class `T4_json`) checks the payload is
-JSON-safe and complete.
 
 ## Conventions
 
-- Series colours: paper = blue (`--series-1`), expected = grey dashed, buy & hold = orange (`--series-2`) in every chart.
-  The pair passes the data-viz palette validator in light and dark mode; the dark steps are selected, not auto-flipped.
+- Series colours: paper = blue, expected = grey dashed, buy & hold = orange, in every chart. The pair passes the
+  data-viz palette validator in light and dark mode.
 - Status is never colour alone: badges carry an icon and a word.
-- Every chart has a legend when it shows more than one series, a crosshair tooltip listing every series, and the same
-  numbers in a table on the page.
+- Numbers are computed in Python; the front end only formats them. Add a number in `payload()`, mirror it in
+  `src/types.ts`, render it in the matching component.

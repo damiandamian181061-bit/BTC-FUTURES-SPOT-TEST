@@ -1,6 +1,6 @@
 """
 Offline tests for orders.py, ledger.py and fakebinance.py. No network beyond 127.0.0.1, nothing in data/ touched.
-Run:  python3 code/test_harness.py      (should end with OK)
+Run:  python3 -m unittest tests/test_harness.py      (should end with OK)
 
  1. Filters: tick/step rounding, string formatting, min-notional check
  2. A entry (futures, post-only): filled at the bid in one go; maker fee; one order
@@ -17,11 +17,7 @@ Run:  python3 code/test_harness.py      (should end with OK)
 import os, sys, tempfile, unittest
 from pathlib import Path
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import exchange as X          # noqa: E402
-import orders as O            # noqa: E402
-import ledger as L            # noqa: E402
-import fakebinance as F       # noqa: E402
+from btc_bot.trading import exchange as X, fakebinance as F, ledger as L, orders as O
 
 
 class Clock:

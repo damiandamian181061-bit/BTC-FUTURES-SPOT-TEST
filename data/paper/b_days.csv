@@ -1,2 +1,3 @@
 day,status,close_prev,sma50,target,held_before,action,qty,avg_price,fee_usdt,slip_real_bp,slip_demo_bp,ref_price_0000,equity_usdt,btc,usdt,delay_min,note
 2026-11-16,SWITCHED,65351.05,79843.7694,CASH,?,SELL,0.05,65294.35,2.451664387,-0.000765763099,-0.000765763099,65351.05,8264.7175,0,8264.7175,,relogged order 83894415923 after a logging crash
+2026-11-17,NO_CHANGE,64882.87,79451.9868,CASH,CASH,none,,,,,,64882.87,8264.7175,0,8264.7175,1.1,

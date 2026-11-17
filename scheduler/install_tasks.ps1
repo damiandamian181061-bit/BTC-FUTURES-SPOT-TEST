@@ -29,7 +29,7 @@ $tasks = @(
 
 $failed = 0
 foreach ($t in $tasks) {
-  $args = "-e bash -c `"'$wslProj/code/run.sh' $($t.Cmd)`""
+  $args = "-e bash `"$wslProj/scripts/run.sh`" $($t.Cmd)"
   $xml = @"
 <?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">

@@ -28,7 +28,9 @@ function servePaperData(): Plugin {
 export default defineConfig({
   plugins: [react(), servePaperData()],
   base: './',
-  server: { port: 5173, strictPort: true, host: '127.0.0.1' },
+  // /api goes to the FastAPI backend (`btc-bot api` or `docker compose up`); if it is down the app falls back to /data
+  server: { port: 5173, strictPort: true, host: '127.0.0.1', proxy: { '/api': 'http://127.0.0.1:8000' } },
+  preview: { proxy: { '/api': 'http://127.0.0.1:8000' } },
   build: {
     outDir: 'dist',
     sourcemap: false,

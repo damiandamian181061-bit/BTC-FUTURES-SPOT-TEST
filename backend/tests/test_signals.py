@@ -1,6 +1,6 @@
 """
 Tests for signals.py (step 3). Reads data/btc_1h.csv and data/btc_1d.csv, writes nothing.
-Run:  python3 code/test_signals.py      (should end with OK)
+Run:  python3 -m unittest tests/test_signals.py      (should end with OK)
 
  1. b_targets() == backtest.py's original `pos` for every day, and == a plain-Python loop
  2. a_allowed_series() == the corrected live-feasible filter (plain-Python loop) for every day;
@@ -17,11 +17,10 @@ from pathlib import Path
 import numpy as np, pandas as pd
 
 sys.dont_write_bytecode = True
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "code"))
-import signals as S  # noqa: E402
+from btc_bot.config import DATA_DIR
+from btc_bot.strategy import signals as S
 
-H = S.load_hourly(ROOT / "data" / "btc_1h.csv")
+H = S.load_hourly(DATA_DIR / "btc_1h.csv")
 DC = S.daily_closes(H)
 RESEARCH_END = "2026-07-31"
 T = lambda s: pd.Timestamp(s, tz="UTC")
@@ -72,7 +71,7 @@ class T2_A_corrected_filter(unittest.TestCase):
 
 
 class T3_hand_checked(unittest.TestCase):
-    D1 = pd.read_csv(ROOT / "data" / "btc_1d.csv", index_col=0, parse_dates=True).close   # built by datafeed, separate path
+    D1 = pd.read_csv(DATA_DIR / "btc_1d.csv", index_col=0, parse_dates=True).close   # built by datafeed, separate path
 
     def indep(self, day, n):
         past = self.D1[self.D1.index < T(day)]

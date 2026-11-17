@@ -177,6 +177,9 @@ Run `python3 code/backtest.py` from the project folder to reproduce everything (
   sections plus a combined total, paper vs "expected" (backtest maths on the same days), real-mid and demo-mid
   slippage side by side, every kill switch of STRATEGY_RULES 6.2, a missed-run grid, alerts, feed status. Scheduled
   as the 5th task at 23:10 UTC via `run.sh dashboard`. Details: HANDOVER_STEP5_START.md section 11.
+- **Project structure (17 Nov 2026):** the Python code is now the `btc_bot` package in `backend/` with a `btc-bot`
+  command, a read-only FastAPI server, and a Docker image (`docker compose up -d --build`). Paths in this file that
+  start with `code/` now live in `backend/src/btc_bot/`; HANDOVER_STEP5_START.md section 13 maps them.
 - **Front end (16 Nov 2026 night):** `dashboard.py` also writes `data/paper/dashboard.json`; `frontend/` is a Vite +
   React + TypeScript app that renders it (charts, tables, kill switches, run grid, light/dark, auto-refresh).
   `cd frontend && npm run dev`. Root `README.md` describes the layout. Details: HANDOVER_STEP5_START.md section 12.

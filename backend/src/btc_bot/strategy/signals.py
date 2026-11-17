@@ -24,18 +24,17 @@ Functions
   current_state(hourly=None, now=None, price_now=None) what the bot should do right now, with checks
 
 Command line (run from the project folder):
-  python3 code/signals.py              # state now; A uses the last stored hourly close as the price
-  python3 code/signals.py --live       # A uses the live Binance price (needs network)
-  python3 code/signals.py --at "2026-11-16 02:40"   # state as it was at a past UTC time
-  python3 code/signals.py --days 10    # also print the last 10 days of signals
+  btc-bot signals              # state now; A uses the last stored hourly close as the price
+  btc-bot signals --live       # A uses the live Binance price (needs network)
+  btc-bot signals --at "2026-11-16 02:40"   # state as it was at a past UTC time
+  btc-bot signals --days 10    # also print the last 10 days of signals
 Exit code 0 = signals computed, 1 = a check failed: do not trade, alert.
 """
 import argparse, math, sys
 from pathlib import Path
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from datafeed import load_hourly, daily_closes, latest_price, NetworkError  # noqa: E402
+from ..data.feed import load_hourly, daily_closes, latest_price, NetworkError
 
 TREND_MA = 50          # Strategy B moving average (days)
 FILTER_MA = 200        # Strategy A trend filter (days)

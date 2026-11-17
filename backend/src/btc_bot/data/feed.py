@@ -13,9 +13,9 @@ What it does
   7. Appends one line per run to data/update_log.csv.
 
 Usage (from anywhere; paths are relative to the project folder):
-  python code/datafeed.py              # update
-  python code/datafeed.py --dry-run    # fetch + check, write nothing
-  python code/datafeed.py --price      # print the current BTCUSDT price and exit
+  btc-bot feed              # update
+  btc-bot feed --dry-run    # fetch + check, write nothing
+  btc-bot feed --price      # print the current BTCUSDT price and exit
 
 Exit code 0 = ok (or nothing new), 1 = a check failed and nothing was written,
 2 = Binance could not be reached. A scheduler can alert on non-zero.
@@ -29,10 +29,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent
-HOURLY_CSV = ROOT / "data" / "btc_1h.csv"
-DAILY_CSV = ROOT / "data" / "btc_1d.csv"
-LOG_CSV = ROOT / "data" / "update_log.csv"
+from ..config import DATA_DIR
+
+HOURLY_CSV = DATA_DIR / "btc_1h.csv"
+DAILY_CSV = DATA_DIR / "btc_1d.csv"
+LOG_CSV = DATA_DIR / "update_log.csv"
 SYMBOL = "BTCUSDT"
 # data-api.binance.vision is Binance's public market-data-only host; api.binance.com is the main one.
 # Override with BTC_FEED_BASE_URL (used by the tests to point at a local mock).

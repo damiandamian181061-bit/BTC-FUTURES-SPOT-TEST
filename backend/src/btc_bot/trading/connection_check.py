@@ -3,14 +3,13 @@ Read-only connection check for the Binance demo accounts (step 4, before any ord
 Places NO orders. Prints balances, fees, and the futures settings A needs.
 
 Run inside WSL from the project folder:
-  python3 code/connection_check.py
+  btc-bot connection-check
 Exit code 0 = both accounts reachable and usable, 1 = something to fix (printed).
 """
 import sys
 from pathlib import Path
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import exchange as X  # noqa: E402
+from . import exchange as X
 
 MAKER_ASSUMED, TAKER_ASSUMED = 0.0002, 0.0005     # backtest fee assumption per side (STRATEGY_RULES.md)
 
@@ -75,8 +74,8 @@ def main():
     try:
         sec, warns = X.load_secrets()
     except X.SecretsError as e:
-        print("ERROR:", e); print("Create it with the one-line command from the chat, then fill it in with nano."); return 1
-    print(f"secrets: {X.SECRETS_PATH} | B key {X.mask(sec['B_SPOT_API_KEY'])} | A key {X.mask(sec['A_FUTURES_API_KEY'])}")
+        print("ERROR:", e); print("Put the four keys in .env (see .env.example) or in the secrets file, then retry."); return 1
+    print(f"secrets: {X.LAST_SOURCE} | B key {X.mask(sec['B_SPOT_API_KEY'])} | A key {X.mask(sec['A_FUTURES_API_KEY'])}")
     for w in warns: print("WARNING:", w)
     problems = []
     for name, fn, client in (("B spot", check_spot, X.spot_client(sec)), ("A futures", check_futures, X.futures_client(sec))):

@@ -1,6 +1,7 @@
-# Autocorrelation, hour-of-day scan, best-window OOS test, day-of-week, volume-vs-return.  Run from project/: python3 code/analysis.py
+# Autocorrelation, hour-of-day scan, best-window OOS test, day-of-week, volume-vs-return.  Run from project/: btc-bot analysis
 import pandas as pd, numpy as np
-df=pd.read_csv("data/btc_1h.csv",index_col=0,parse_dates=True)
+from ..config import DATA_DIR
+df=pd.read_csv(DATA_DIR / "btc_1h.csv",index_col=0,parse_dates=True)
 r=np.log(df.close).diff().dropna()            # hourly log returns
 FEE=0.0010  # taker in+out = 0.10%
 IS=r[:"2022-12-31"]; OOS=r["2023-01-01":]

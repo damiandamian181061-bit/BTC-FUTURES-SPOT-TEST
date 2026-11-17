@@ -1,7 +1,7 @@
 """
 Offline tests for datafeed.py against a local fake Binance API built from data/btc_1h.csv.
 Nothing in data/ is touched: each test works on a copy in a temp folder.
-Run:  python code/test_datafeed.py
+Run:  python3 -m unittest tests/test_datafeed.py
 """
 import json, os, shutil, socket, sys, tempfile, threading, unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -10,8 +10,9 @@ from urllib.parse import parse_qs, urlparse
 import pandas as pd
 
 sys.dont_write_bytecode = True
-ROOT = Path(__file__).resolve().parent.parent
-FULL = pd.read_csv(ROOT / "data" / "btc_1h.csv", index_col=0, parse_dates=True)["2026-01-01":"2026-07-31"]   # fixed slice: the live file keeps growing
+from btc_bot.config import DATA_DIR
+
+FULL = pd.read_csv(DATA_DIR / "btc_1h.csv", index_col=0, parse_dates=True)["2026-01-01":"2026-07-31"]   # fixed slice: the live file keeps growing
 DAILY = FULL.resample("1D").agg({"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}).dropna()
 FAULT = {"mode": ""}
 
@@ -40,8 +41,7 @@ class TestDataFeed(unittest.TestCase):
         cls.srv = ThreadingHTTPServer(("127.0.0.1", port), FakeBinance)
         threading.Thread(target=cls.srv.serve_forever, daemon=True).start()
         os.environ["BTC_FEED_BASE_URL"] = f"http://127.0.0.1:{port}"
-        sys.path.insert(0, str(ROOT / "code"))
-        import datafeed; cls.f = datafeed
+        from btc_bot.data import feed as datafeed; cls.f = datafeed
         datafeed.BASE_URLS = [os.environ["BTC_FEED_BASE_URL"]]
 
     @classmethod

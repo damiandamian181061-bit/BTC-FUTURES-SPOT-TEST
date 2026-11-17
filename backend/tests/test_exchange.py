@@ -1,12 +1,11 @@
 """Offline tests for exchange.py: signing, secrets file, signed round trip against a fake server. No network.
-Run: python3 code/test_exchange.py"""
+Run: python3 -m unittest tests/test_exchange.py"""
 import hashlib, hmac, json, os, socket, sys, tempfile, threading, unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qsl, urlparse
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import exchange as X  # noqa: E402
+from btc_bot.trading import exchange as X
 
 KEY, SECRET = "testkey123456", "testsecret987654"
 

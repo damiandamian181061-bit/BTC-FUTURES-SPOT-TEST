@@ -10,3 +10,5 @@ ts_utc,command,day,dry_run,status,duration_s,note
 2026-11-16T22:42:35Z,dashboard,2026-11-16,False,OK,0.6,html dashboard.html; missed runs 0; alerts 7d 2
 2026-11-16T23:01:23Z,dashboard,2026-11-16,False,OK,0.7,html dashboard.html; missed runs 0; alerts 7d 2
 2026-11-16T23:09:21Z,dashboard,2026-11-16,False,OK,0.6,html+json dashboard.html; missed runs 0; alerts 7d 2
+2026-11-16T23:55:48Z,dashboard,2026-11-16,False,OK,0.4,html+json dashboard.html; missed runs 0; alerts 7d 2
+2026-11-17T00:01:15Z,b-check,2026-11-17,False,OK,12.7,no change (CASH)

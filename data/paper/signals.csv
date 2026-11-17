@@ -1,2 +1,3 @@
 ts_utc,day,strategy,decision,price,price_source,sma,close_prev,state,ok,warnings,errors
 2026-11-16T21:58:03Z,2026-11-16,B,CASH,65351.05,close,79843.7694,65351.05,"bear (B cash, A off)",True,"A uses the last stored close, not a live price: for the real 20:55 check use --live",
+2026-11-17T00:01:13Z,2026-11-17,B,CASH,64882.87,close,79451.9868,64882.87,"bear (B cash, A off)",True,"A uses the last stored close, not a live price: for the real 20:55 check use --live",

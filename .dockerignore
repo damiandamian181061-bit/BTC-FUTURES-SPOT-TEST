@@ -1,0 +1,16 @@
+# Allow-list: only what the image needs is sent to the build. .env, keys, data, logs and git history never are.
+**
+!backend/pyproject.toml
+!backend/README.md
+!backend/src/**
+!backend/tests/**
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/index.html
+!frontend/tsconfig*.json
+!frontend/vite.config.ts
+!frontend/src/**
+!frontend/scripts/**
+!STRATEGY_RULES.md
+**/__pycache__
+**/*.pyc

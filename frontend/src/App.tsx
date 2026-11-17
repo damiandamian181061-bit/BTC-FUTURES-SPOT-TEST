@@ -15,7 +15,7 @@ const NAV = [
 const THEMES: { id: Theme; label: string }[] = [{ id: 'system', label: 'Auto' }, { id: 'light', label: 'Light' }, { id: 'dark', label: 'Dark' }]
 
 export default function App() {
-  const { data, error, loading, fetchedAt, refresh } = useDashboard(60_000)
+  const { data, source, error, loading, fetchedAt, refresh } = useDashboard(60_000)
   const [theme, setTheme] = useTheme()
   const triggered = data?.kill.filter((k) => k.status === 'bad').length ?? 0
   return (
@@ -29,7 +29,14 @@ export default function App() {
         </div>
         <nav aria-label="sections">{NAV.map(([id, label]) => <a key={id} href={`#${id}`}>{label}</a>)}</nav>
         <div className="tools">
-          {fetchedAt && <span className="muted small" title="when this page last read dashboard.json">read {fetchedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>}
+          {fetchedAt && (
+            <span
+              className="muted small"
+              title={source === 'api' ? 'numbers computed live by the API' : 'API not reachable: showing the dashboard.json written by the 23:10 UTC task'}
+            >
+              {source === 'api' ? 'live' : 'from file'} · {fetchedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
           <button type="button" className="ghost" onClick={() => void refresh()} disabled={loading}>{loading ? 'Refreshing' : 'Refresh'}</button>
           <div className="segmented" role="radiogroup" aria-label="theme">
             {THEMES.map((t) => (
@@ -46,10 +53,10 @@ export default function App() {
         {error && !data && (
           <div className="card" role="alert">
             <h2>No dashboard data yet</h2>
-            <p>Could not load <code>data/dashboard.json</code>: {error}.</p>
+            <p>Neither the API nor the dashboard file answered: {error}.</p>
             <p className="muted small">
-              The Python side writes it. In WSL, from the project folder: <code>python3 code/dashboard.py</code>. The scheduled task does the same every
-              day at 23:10 UTC. Then press Refresh.
+              Start the backend with <code>docker compose up</code> or <code>btc-bot api</code>, or write the file with <code>btc-bot dashboard</code>.
+              Then press Refresh.
             </p>
           </div>
         )}
@@ -68,7 +75,7 @@ export default function App() {
             <KillSwitches d={data} />
             <Operations d={data} />
             <footer>
-              Numbers from code/dashboard.py (data/paper/*.csv and data/btc_1h.csv), rules STRATEGY_RULES.md v1.1. Expected curves: the backtest maths on the same days.
+              Numbers from the btc_bot API (data/paper/*.csv and data/btc_1h.csv), rules STRATEGY_RULES.md v1.1. Expected curves: the backtest maths on the same days.
               No parameter is tuned on data after 31 Jul 2026. This page re-reads the file every minute. Logs: {data.paper_dir}.
             </footer>
           </>

@@ -12,6 +12,10 @@ Demo Trading from a laptop (WSL), built as a CV project.
 4. `PROJECT_CONTEXT.md`: master history (martingale -> research -> decision). Only if needed: `HANDOVER_STEP3.md`,
    `HANDOVER_STEP2.md`, `docs/STRATEGY_WRITEUP.md` (research numbers, still pre-correction).
 
+**Code layout changed on 17 Nov 2026 00:00 UTC:** `code/` is now the `btc_bot` package in `backend/`, the scheduler
+calls `scripts/run.sh`, and commands are `btc-bot <command>`. Section 13 maps every old path; older sections and
+handovers still use the old `code/...` paths.
+
 **Where we stopped (updated 16 Nov 2026, ~22:50 UTC):** the dashboard is built, tested and run on the real logs
 (section 11), and the five scheduled tasks are INSTALLED (16 Nov 22:42 UTC, with Damian's go-ahead; the dashboard task
 was fired by hand through Task Scheduler and ran clean). The paper run is live: first automatic run = b-check at
@@ -336,3 +340,48 @@ somewhere reachable from the phone (any static host; the JSON would need copying
   16 Nov 2026 ~23:36 UTC, Damian chose public). Routine, from Windows PowerShell or WSL in the project folder:
   `git add -A`, `git commit -m "..."`, `git push`.
   The paper logs under `data/paper/*.csv` are tracked, so a commit after a run records the day's rows.
+
+---
+
+## 13. Session of 16-17 Nov 2026 (23:40-00:10 UTC): backend package, FastAPI, Docker, .env
+
+**API keys: already set.** All four (`B_SPOT_API_KEY`, `B_SPOT_API_SECRET`, `A_FUTURES_API_KEY`,
+`A_FUTURES_API_SECRET`) are in `~/.config/btc-bot/secrets.env` inside WSL (mode 600), checked by name only. They stay
+there. The project `.env` (git-ignored) now holds settings, empty key slots that would override the file if filled,
+and `HOST_SECRETS_FILE` so Docker can mount that file read-only. `.env.example` documents every setting.
+Key precedence (trading/exchange.py `load_secrets`): environment variable (which `.env` can set) > secrets file.
+
+**Code moved: `code/` is gone.** Same modules, same behaviour, now a package with history kept as git renames:
+
+| Old | New (`backend/src/btc_bot/...`) | Command |
+|---|---|---|
+| `code/datafeed.py` | `data/feed.py` | `btc-bot feed` |
+| `code/signals.py` | `strategy/signals.py` | `btc-bot signals` |
+| `code/backtest.py`, `fresh_oos.py`, `analysis.py` | `research/` | `btc-bot backtest` / `holdout` / `analysis` |
+| `code/exchange.py`, `orders.py`, `ledger.py`, `harness.py`, `fakebinance.py`, `connection_check.py` | `trading/` | `btc-bot harness <cmd>`, `btc-bot connection-check` |
+| `code/dashboard.py` | `reporting/dashboard.py` | `btc-bot dashboard` |
+| `code/test_*.py` | `backend/tests/` | `docker compose --profile test run --rm tests` |
+| `code/run.sh` | `scripts/run.sh` | what the scheduled tasks call |
+
+New: `config.py` (paths from env/.env, `btc-bot config` prints them), `cli.py` (`btc-bot`), `api/app.py` (FastAPI),
+`backend/pyproject.toml` (installable package; pandas/numpy pinned below 3 to match WSL). Without installing:
+`PYTHONPATH=backend/src python3 -m btc_bot <command>` from the project root. A dev venv with FastAPI exists at
+`~/.venvs/btc-bot` (system pandas + fastapi/uvicorn/httpx).
+
+**API (read-only, no order endpoints):** `/api/health`, `/api/dashboard` (live payload, 30 s cache),
+`POST /api/dashboard/render`, `/api/signals`, `/api/ledger/{name}`, `/api/accounts` (demo balances via signed GETs),
+`/data/dashboard.json`, and the built web app at `/`. The front end now asks the API first and falls back to the file;
+the header says "live" or "from file".
+
+**Docker:** one image (Node stage builds the front end, Python 3.13 slim runs uvicorn as uid 1000);
+`docker compose up -d --build` -> http://127.0.0.1:8000. Mounts `./data`, `./charts`, and the secrets file read-only.
+`.dockerignore` is an allow-list, so `.env`, keys and data never enter the image. The scheduled bot stays on the host,
+so nothing trades twice. The `app` service restarts with Docker Desktop (`restart: unless-stopped`).
+
+**Verified (16 Nov 23:52-00:00 UTC):** 77 tests pass in the container and on the host (7 API tests skip without
+FastAPI); container healthy; every endpoint answered (accounts: B 8,264.72 USDT cash, A flat, keys from the mounted
+file); web app renders live from the API; scheduled tasks re-registered to `scripts/run.sh` and the dashboard task
+fired through Task Scheduler with result 0; `harness status --dry-run` works through the new package.
+**First scheduled run on the new path, observed:** b-check fired 17 Nov 00:01:00 UTC, added 3 candles (to 16 Nov
+23:00), close 64,882.87 vs SMA50 79,451.99 -> CASH, holding CASH, "no change", exit 0, task result 0. Next to watch:
+the first A pre-check / entry / exit at 20:55-23:00 UTC (they will log SKIPPED_FILTER while the price is below SMA200).

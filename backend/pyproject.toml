@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "btc-bot"
+version = "0.2.0"
+description = "BTC trend + evening-window strategy: data feed, signals, research, paper-trading bot, dashboard and read-only API"
+readme = "README.md"
+requires-python = ">=3.12"
+# pandas/numpy kept to the major versions the scheduled bot runs on in WSL (Ubuntu: pandas 2.3, numpy 2.3)
+dependencies = [
+    "pandas>=2.1,<3",
+    "numpy>=1.26,<3",
+    "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+api = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+btc-bot = "btc_bot.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

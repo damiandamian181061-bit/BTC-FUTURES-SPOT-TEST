@@ -2,9 +2,9 @@
 BTC strategy backtest: Strategy B (50-day trend) + Strategy A (21:00-23:00 UTC window, 200-day filter).
 Reproduces every table in docs/STRATEGY_WRITEUP.md and draws charts/.
 Usage (run from the project root):
-  python3 code/backtest.py                    # research numbers, corrected A filter (STRATEGY_RULES.md v1.1)
-  python3 code/backtest.py --original-filter  # the original v1.0 numbers (A filter with look-ahead), for the record
-  python3 code/backtest.py --end 2026-11-15   # include data after the research period (NOT for tuning)
+  btc-bot backtest                    # research numbers, corrected A filter (STRATEGY_RULES.md v1.1)
+  btc-bot backtest --original-filter  # the original v1.0 numbers (A filter with look-ahead), for the record
+  btc-bot backtest --end 2026-11-15   # include data after the research period (NOT for tuning)
 Data: data/btc_1h.csv - Binance spot BTCUSDT 1-hour candles, UTC. Research period 2019-10-01 .. 2026-07-31.
 Signals come from code/signals.py (the same code the bot uses).
 Step 3 change (16 Nov 2026): A's filter is now the live-feasible one (21:00 price > SMA200 of closes up to
@@ -14,8 +14,8 @@ Charts are only redrawn for the corrected run.
 import argparse, os, sys
 import pandas as pd, numpy as np, matplotlib
 matplotlib.use("Agg"); import matplotlib.pyplot as plt
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import signals as S
+from ..config import CHARTS_DIR, DATA_DIR
+from ..strategy import signals as S
 
 MAKER = 0.0004   # Binance USDT-M regular-user maker fee, in+out  (0.02% x 2)
 TAKER = 0.0010   # taker fee, in+out (0.05% x 2)
@@ -28,7 +28,7 @@ ap = argparse.ArgumentParser(description="B + A backtest")
 ap.add_argument("--original-filter", action="store_true", help="use the original look-ahead A filter (v1.0 numbers)")
 ap.add_argument("--end", default=RESEARCH_END, help=f"last day of data to use (default {RESEARCH_END})")
 args = ap.parse_args()
-df = pd.read_csv("data/btc_1h.csv", index_col=0, parse_dates=True)
+df = pd.read_csv(DATA_DIR / "btc_1h.csv", index_col=0, parse_dates=True)
 df = df[df.index < pd.Timestamp(args.end, tz="UTC") + pd.Timedelta(days=1)]
 print(f"Data {df.index[0]} .. {df.index[-1]} | A filter: " + ("ORIGINAL (look-ahead, v1.0, for the record only)"
       if args.original_filter else "corrected: 21:00 price > SMA200 to yesterday (v1.1)") + "\n")
@@ -90,21 +90,22 @@ if args.original_filter or args.end != RESEARCH_END:
     print("\n(charts not redrawn: they show the corrected research run only)"); sys.exit(0)
 
 # ---- Charts
+CHARTS_DIR.mkdir(parents=True, exist_ok=True)
 fig, ax = plt.subplots(figsize=(11, 5.5))
 for n, s in strats.items():
     if n == "B + A (A at 2x)": continue
     eq = np.exp(s[start:].fillna(0).cumsum()); ax.plot(eq.index, eq, label=n, lw=1.4)
 ax.set_yscale("log"); ax.set_ylabel("Growth of 1 (log scale)"); ax.set_title("BTC: buy & hold vs Strategy B, A and B+A (fees included)")
 ax.axvline(pd.Timestamp(OOS_START, tz="UTC"), color="grey", ls="--", lw=1); ax.text(pd.Timestamp(OOS_START, tz="UTC"), ax.get_ylim()[1]*0.7, " out-of-sample →", color="grey")
-ax.legend(); ax.grid(alpha=.3); fig.tight_layout(); fig.savefig("charts/equity_curves.png", dpi=130)
+ax.legend(); ax.grid(alpha=.3); fig.tight_layout(); fig.savefig(CHARTS_DIR / "equity_curves.png", dpi=130)
 
 fig, ax = plt.subplots(figsize=(11, 4))
 for n in ("Buy & hold", "B + A (A at 1x)"):
     eq = np.exp(strats[n][start:].fillna(0).cumsum()); ax.plot(eq.index, eq / eq.cummax() - 1, label=n, lw=1.2)
-ax.set_title("Drawdown from peak"); ax.set_ylabel("drawdown"); ax.legend(); ax.grid(alpha=.3); fig.tight_layout(); fig.savefig("charts/drawdowns.png", dpi=130)
+ax.set_title("Drawdown from peak"); ax.set_ylabel("drawdown"); ax.legend(); ax.grid(alpha=.3); fig.tight_layout(); fig.savefig(CHARTS_DIR / "drawdowns.png", dpi=130)
 
 fig, ax = plt.subplots(figsize=(11, 4))
 hr_is = hourly[start:IS_END]; hr_oos = hourly[OOS_START:]
 ax.bar(np.arange(24) - .2, hr_is.groupby(hr_is.index.hour).mean() * 1e4, .4, label="2020-22"); ax.bar(np.arange(24) + .2, hr_oos.groupby(hr_oos.index.hour).mean() * 1e4, .4, label="2023-26")
-ax.set_xticks(range(24)); ax.set_xlabel("hour (UTC)"); ax.set_ylabel("avg return, bp"); ax.set_title("Average BTC return by hour of day"); ax.legend(); ax.grid(alpha=.3, axis="y"); fig.tight_layout(); fig.savefig("charts/hour_of_day.png", dpi=130)
-print("\ncharts written to charts/")
+ax.set_xticks(range(24)); ax.set_xlabel("hour (UTC)"); ax.set_ylabel("avg return, bp"); ax.set_title("Average BTC return by hour of day"); ax.legend(); ax.grid(alpha=.3, axis="y"); fig.tight_layout(); fig.savefig(CHARTS_DIR / "hour_of_day.png", dpi=130)
+print(f"\ncharts written to {CHARTS_DIR}")

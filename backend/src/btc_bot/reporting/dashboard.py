@@ -2,11 +2,11 @@
 Paper-trading dashboard (step 4/5). Reads the append-only logs under data/paper/ and writes a self-contained
 data/paper/dashboard.html plus a text summary on the terminal. Read-only: no orders, no API keys, no network.
 
-  python3 code/dashboard.py             # real logs -> data/paper/dashboard.html
-  python3 code/dashboard.py --dry-run   # dry-run logs -> data/paper/dryrun/dashboard.html
-  python3 code/dashboard.py --no-html   # terminal summary only (no html, no json)
-  python3 code/dashboard.py --days 30   # days shown in the operations grid (default 14)
-Scheduled daily at 23:10 UTC (scheduler/install_tasks.ps1 -> code/run.sh dashboard), after A's exit.
+  btc-bot dashboard             # real logs -> data/paper/dashboard.html
+  btc-bot dashboard --dry-run   # dry-run logs -> data/paper/dryrun/dashboard.html
+  btc-bot dashboard --no-html   # terminal summary only (no html, no json)
+  btc-bot dashboard --days 30   # days shown in the operations grid (default 14)
+Scheduled daily at 23:10 UTC (scheduler/install_tasks.ps1 -> scripts/run.sh dashboard), after A's exit.
 Also writes data/paper/dashboard.json (same numbers, one JSON document): the Vite front end in frontend/ renders it.
 
 Sections (B and A are kept separate, plus a combined total):
@@ -24,13 +24,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import numpy as np, pandas as pd
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import ledger as L                                   # noqa: E402
-import signals as S                                  # noqa: E402
-from datafeed import load_hourly, daily_closes       # noqa: E402
-from fresh_oos import build, BT, BT_B_SWITCHES_YR    # noqa: E402
+from ..config import DATA_DIR
+from ..data.feed import load_hourly, daily_closes
+from ..research.fresh_oos import build, BT, BT_B_SWITCHES_YR
+from ..strategy import signals as S
+from ..trading import ledger as L
 
-ROOT = Path(__file__).resolve().parent.parent
 DAY = pd.Timedelta(days=1)
 RUN_TIMES = {"b-check": (0, 1), "a-precheck": (20, 55), "a-enter": (21, 0), "a-exit": (22, 55), "dashboard": (23, 10)}
 GRACE_MIN = 20                      # a scheduled run counts as missing this many minutes after its time
@@ -312,7 +311,7 @@ def compute(now=None, grid_days=14, hourly=None):
            "alerts_7d": week.level.value_counts().to_dict() if len(week) else {}, "runs_total": len(runs),
            "errors_7d": int((runs[pd.to_datetime(runs.ts_utc, utc=True) > now_ts - pd.Timedelta(days=7)].status == "ERROR").sum()) if len(runs) else 0}
     ops["feed"] = None
-    p = ROOT / "data" / "update_log.csv"
+    p = DATA_DIR / "update_log.csv"
     if p.exists():
         with open(p, newline="", encoding="utf-8") as f: rows_ = list(csv.DictReader(f))
         if rows_: ops["feed"] = rows_[-1]

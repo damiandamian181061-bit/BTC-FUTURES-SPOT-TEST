@@ -19,8 +19,9 @@ import csv, os, time, traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-BASE_DIR = Path(os.environ.get("BTC_BOT_PAPER_DIR", ROOT / "data" / "paper"))
+from ..config import PAPER_DIR
+
+BASE_DIR = PAPER_DIR          # tests point this at a temp folder
 _dry = False
 
 COLUMNS = {

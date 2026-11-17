@@ -1,15 +1,15 @@
 """
 Paper-trading harness (step 4): the entry point the scheduler calls. STRATEGY_RULES.md v1.1 sections 2.2 and 3.2.
 
-  python3 code/harness.py status                 balances, position, open orders, today's signals. No orders.
-  python3 code/harness.py setup                  A one-time setup: one-way mode, ISOLATED margin, leverage (default 3x)
-  python3 code/harness.py b-check                00:01 UTC  B: update data, compute target, switch spot holding if needed
-  python3 code/harness.py a-precheck             20:55 UTC  A: live price vs SMA200[D-1]; records ALLOWED / SKIPPED_FILTER
-  python3 code/harness.py a-enter                21:00 UTC  A: post-only buy at the bid until 21:05; never market-buys
-  python3 code/harness.py a-exit                 22:55 UTC  A: post-only sell at the ask until 23:00, then market
-  python3 code/harness.py a-test                 supervised test: post-only orders 5% away from the market, then cancelled
-  python3 code/harness.py flatten                emergency: cancel A's orders and close A's position at market
-  python3 code/harness.py relog --strategy B --order-id N   recovery: re-fetch an order and write its fills/day row
+  btc-bot harness status                 balances, position, open orders, today's signals. No orders.
+  btc-bot harness setup                  A one-time setup: one-way mode, ISOLATED margin, leverage (default 3x)
+  btc-bot harness b-check                00:01 UTC  B: update data, compute target, switch spot holding if needed
+  btc-bot harness a-precheck             20:55 UTC  A: live price vs SMA200[D-1]; records ALLOWED / SKIPPED_FILTER
+  btc-bot harness a-enter                21:00 UTC  A: post-only buy at the bid until 21:05; never market-buys
+  btc-bot harness a-exit                 22:55 UTC  A: post-only sell at the ask until 23:00, then market
+  btc-bot harness a-test                 supervised test: post-only orders 5% away from the market, then cancelled
+  btc-bot harness flatten                emergency: cancel A's orders and close A's position at market
+  btc-bot harness relog --strategy B --order-id N   recovery: re-fetch an order and write its fills/day row
 
 Flags: --dry-run (fake exchange seeded from the real public book, auto-fills, logs to data/paper/dryrun/; its fake
        balances persist in data/paper/dryrun/fake_*.json: delete those to start the dry run afresh),
@@ -27,10 +27,7 @@ import argparse, sys, time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import exchange as X          # noqa: E402
-import orders as O            # noqa: E402
-import ledger as L            # noqa: E402
+from . import exchange as X, ledger as L, orders as O
 
 A_ENTRY, A_ENTRY_END, A_EXIT, A_EXIT_END = (21, 0), (21, 5), (22, 55), (23, 0)   # UTC
 B_LIMIT_MINUTES = 15                   # B: limit at the touch for this long, then market (rule 2.2)
@@ -59,7 +56,7 @@ class Venues:
     def __init__(self, dry_run):
         self.dry = dry_run
         if dry_run:
-            import fakebinance as F
+            from . import fakebinance as F
             rb_s, rb_f = O.real_book(False), O.real_book(True)
             self.spot_sim = F.Sim(futures=False, bid=rb_s["bid"] if rb_s else 65000.0, ask=rb_s["ask"] if rb_s else 65000.01, usdt=5000.0)
             self.fut_sim = F.Sim(futures=True, bid=rb_f["bid"] if rb_f else 65000.0, ask=rb_f["ask"] if rb_f else 65000.1, usdt=5000.0)
@@ -104,7 +101,7 @@ def log_fills(strategy, venue, side, fills, ref_real_mid, ref_demo_mid, client=N
 
 def signal_state(live_price=None, retry_feed=True):
     """signals.current_state(), updating the data first if yesterday's close is missing."""
-    import signals as S
+    from ..strategy import signals as S
     s = S.current_state(price_now=live_price)
     if not s["ok"] and retry_feed and any("run datafeed" in e or "missing" in e for e in s["errors"]):
         print("signal not ok -> running datafeed.py then retrying once"); run_datafeed()
@@ -113,7 +110,7 @@ def signal_state(live_price=None, retry_feed=True):
 
 
 def run_datafeed():
-    import datafeed
+    from ..data import feed as datafeed
     try:
         return datafeed.update()
     except datafeed.NetworkError as e:
@@ -121,7 +118,7 @@ def run_datafeed():
 
 
 def live_price(dry_run):
-    import datafeed
+    from ..data import feed as datafeed
     try:
         return datafeed.latest_price(), "live"
     except datafeed.NetworkError as e:
@@ -404,7 +401,7 @@ def cmd_relog(v, a, run):
     ref_demo = (float(prev["demo_bid"]) + float(prev["demo_ask"])) / 2 if prev.get("demo_bid") and prev.get("demo_ask") else None
     log_fills(a.strategy, venue, o["side"], fills, ref_real, ref_demo, v.spot)
     if a.strategy == "B":
-        import signals as S
+        from ..strategy import signals as S
         s = S.current_state(); e = O.spot_equity(v.spot); fee = sum(O.fee_usdt(t, v.spot) for t in fills)
         target = "LONG" if s["b_target"] else "CASH"; held_after = "LONG" if e["btc"] * e["price"] >= LONG_THRESHOLD * e["equity"] else "CASH"
         L.append("b_days", day=prev.get("day") or today_utc(), status="SWITCHED" if held_after == target else "SWITCH_INCOMPLETE", close_prev=s["b_close"], sma50=s["sma50"],

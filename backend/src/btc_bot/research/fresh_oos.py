@@ -2,9 +2,9 @@
 Fresh out-of-sample check: runs the exact backtest.py strategy maths on data the research never saw
 (from 2026-08-01, the day after the research dataset ended). No parameters are changed or fitted.
 
-Usage (after `python code/datafeed.py`):
-  python code/fresh_oos.py                    # holdout = 2026-08-01 .. last complete day
-  python code/fresh_oos.py --start 2026-04-20 # any other window (used to test against backtest.py)
+Usage (after `btc-bot feed`):
+  btc-bot holdout                    # holdout = 2026-08-01 .. last complete day
+  btc-bot holdout --start 2026-04-20 # any other window (used to test against backtest.py)
 
 Prints: strategy returns on the holdout, Strategy A trade stats vs the backtest, Strategy B switch
 count, a monthly table, where the holdout sits in the distribution of same-length windows from the
@@ -17,9 +17,8 @@ from pathlib import Path
 import numpy as np, pandas as pd, matplotlib
 matplotlib.use("Agg"); import matplotlib.pyplot as plt
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "code"))
-import signals as S  # noqa: E402
+from ..config import CHARTS_DIR, DATA_DIR
+from ..strategy import signals as S
 # ---- identical to backtest.py; do not tune these on the holdout
 MAKER, TAKER = 0.0004, 0.0010
 WINDOW_HOURS, TREND_MA, FILTER_MA = [21, 22], 50, 200
@@ -58,7 +57,7 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--start", default="2026-08-01"); ap.add_argument("--end", default=None)
     ap.add_argument("--original-filter", action="store_true", help="old A filter with look-ahead (for the record)")
     a = ap.parse_args(); bt = BT[a.original_filter]
-    df = df_all = pd.read_csv(ROOT / "data" / "btc_1h.csv", index_col=0, parse_dates=True)
+    df = df_all = pd.read_csv(DATA_DIR / "btc_1h.csv", index_col=0, parse_dates=True)
     # use complete UTC days only (the feed can stop mid-day)
     hrs = df.close.resample("1D").count(); last_full = hrs[hrs == 24].index[-1]
     df = df[: last_full + pd.Timedelta(hours=23)]
@@ -110,7 +109,7 @@ def main():
     print(f"\n=== Signal state at {st['day'].date()} 00:01 UTC (signals.py) ===")
     print(f"B: close {st['b_close']:,.0f} vs SMA50 {st['sma50']:,.0f} -> {'LONG' if st['b_target'] else 'CASH'} | "
           f"A: last stored close {st['a_price']:,.0f} vs SMA200 {st['sma200']:,.0f} -> {'ON' if st['a_allowed'] else 'OFF'} "
-          "(the live 20:55 check uses the current price: python3 code/signals.py --live)")
+          "(the live 20:55 check uses the current price: btc-bot signals --live)")
 
     fig, ax = plt.subplots(figsize=(10, 4.8))
     for n, s in ST.items():
@@ -118,7 +117,7 @@ def main():
     ax.axhline(1, color="grey", lw=.8); ax.set_ylabel("growth of 1"); ax.grid(alpha=.3); ax.legend()
     label = "Fresh out-of-sample holdout" if a.start == "2026-08-01" else "Strategy check"
     ax.set_title(f"{label} {a.start} to {end} (parameters unchanged, fees in)")
-    fig.tight_layout(); out = ROOT / "charts" / ("holdout_equity.png" if a.start == "2026-08-01" else f"check_{a.start}_{end}.png"); fig.savefig(out, dpi=130); print(f"\nchart: {out.relative_to(ROOT)}")
+    fig.tight_layout(); CHARTS_DIR.mkdir(parents=True, exist_ok=True); out = CHARTS_DIR / ("holdout_equity.png" if a.start == "2026-08-01" else f"check_{a.start}_{end}.png"); fig.savefig(out, dpi=130); print(f"\nchart: {out}")
 
 
 if __name__ == "__main__":

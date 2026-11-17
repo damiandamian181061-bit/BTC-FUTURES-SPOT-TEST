@@ -1,6 +1,6 @@
 """
 Offline tests for dashboard.py. Logs are written to a temp folder (ledger.BASE_DIR); data/paper is never touched.
-Reads data/btc_1h.csv for the expected curves and the signal checks. Run:  python3 code/test_dashboard.py
+Reads data/btc_1h.csv for the expected curves and the signal checks. Run:  python3 -m unittest tests/test_dashboard.py
 
  1. Empty logs: compute() and the HTML work; every kill switch reads "no data yet"; nothing counted as missed
  2. Synthetic ten-day paper run (18-27 Oct 2026): fill rate, slippage (real vs demo), avg bp, win rate, exit types,
@@ -14,11 +14,10 @@ import io, json, sys, tempfile, unittest, contextlib
 from pathlib import Path
 import numpy as np, pandas as pd
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import ledger as L                               # noqa: E402
-import signals as S                              # noqa: E402
-from datafeed import load_hourly, daily_closes   # noqa: E402
-import dashboard as D                            # noqa: E402
+from btc_bot.data.feed import load_hourly, daily_closes
+from btc_bot.reporting import dashboard as D
+from btc_bot.strategy import signals as S
+from btc_bot.trading import ledger as L
 
 H = load_hourly()
 DC = daily_closes(H)
@@ -179,7 +178,9 @@ class T3_helpers(unittest.TestCase):
         one = D.line_chart([dict(name="x", pts=[(pd.Timestamp("2026-11-16", tz="UTC"), 1.0)], color="#000")], "t"); self.assertIn("<circle", one)
         two = D.line_chart([dict(name="x", pts=[(pd.Timestamp("2026-11-16", tz="UTC"), 1.0), (pd.Timestamp("2026-11-20", tz="UTC"), 1.02)], color="#000", dash=True)], "t")
         self.assertIn("<polyline", two); self.assertIn("stroke-dasharray", two)
-        self.assertEqual(D.quarter("2026-11-16"), "2026Q4"); self.assertEqual(D.quarter_end("2026Q3"), pd.Timestamp("2026-09-30 23:59:59.999999999", tz="UTC"))
+        self.assertEqual(D.quarter("2026-11-16"), "2026Q4")
+        qe = D.quarter_end("2026Q3")                                # pandas 2 ends at ns, pandas 3 at us precision
+        self.assertTrue(pd.Timestamp("2026-09-30 23:59:59", tz="UTC") <= qe < pd.Timestamp("2026-10-01", tz="UTC"), qe)
         self.assertEqual(D.nice_step(0.01), 0.002); self.assertEqual(D.nice_step(1.0), 0.2)
 
     def test_combined_equity(self):

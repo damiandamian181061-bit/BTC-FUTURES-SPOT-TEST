@@ -20,8 +20,7 @@ import os, sys, time
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_DOWN, ROUND_UP
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import exchange as X  # noqa: E402
+from . import exchange as X
 
 SYMBOL = "BTCUSDT"
 REAL_FUTURES_URL = os.environ.get("BTC_BOT_REAL_FUTURES_URL", "https://fapi.binance.com")

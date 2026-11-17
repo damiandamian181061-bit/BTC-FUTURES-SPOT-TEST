@@ -1,0 +1,41 @@
+# Run from the project folder (in WSL, so HOST_SECRETS_FILE in .env resolves):
+#   docker compose up -d --build                 web app + API on http://127.0.0.1:8000  (docs: /docs)
+#   docker compose logs -f app                   follow the API log
+#   docker compose run --rm app btc-bot harness status        any btc-bot command, one-off, inside the image
+#   docker compose --profile test run --rm tests              the test suite inside the image
+#   docker compose down                          stop
+# The scheduled paper-trading runs stay on the host (Windows Task Scheduler -> WSL -> scripts/run.sh). No container
+# here trades on a schedule, so nothing can run a strategy twice.
+name: btc-strategy
+
+x-app: &app
+  build: .
+  image: btc-strategy-app:latest
+  env_file:
+    - path: .env
+      required: false
+  environment: &env
+    BTC_BOT_ROOT: /app
+    BTC_BOT_DATA_DIR: /app/data
+    BTC_BOT_PAPER_DIR: /app/data/paper
+    BTC_BOT_CHARTS_DIR: /app/charts
+    BTC_BOT_SECRETS: /run/secrets/btc-bot.env
+
+services:
+  app:
+    <<: *app
+    ports:
+      - "127.0.0.1:${APP_PORT:-8000}:8000"
+    volumes:
+      - ./data:/app/data
+      - ./charts:/app/charts
+      - ${HOST_SECRETS_FILE:-/dev/null}:/run/secrets/btc-bot.env:ro
+    restart: unless-stopped
+
+  tests:
+    <<: *app
+    profiles: ["test"]
+    working_dir: /app/backend
+    command: ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider"]
+    volumes:
+      - ./data:/app/data:ro
