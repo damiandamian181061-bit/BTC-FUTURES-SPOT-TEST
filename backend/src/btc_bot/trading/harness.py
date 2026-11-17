@@ -22,6 +22,8 @@ A = 1.0 x futures account value (totalMarginBalance). Both match the backtest's 
 Never increases size after a loss: size is always re-measured from the current balance.
 Safety: no trade on a failed data update or a not-ok signal (alert instead). A never holds past 23:00.
 A machine that was asleep at 21:00 logs MISSED_MACHINE_OFF, not UNFILLED, so the fill rate stays honest.
+A commands started before 20:50 UTC (a late catch-up after midnight) never open a window: a-precheck and a-enter do
+nothing, and a-exit closes any leftover position at market, booked to the previous day (added 17 Nov 2026).
 """
 import argparse, sys, time
 from datetime import datetime, timedelta, timezone
@@ -30,6 +32,8 @@ sys.dont_write_bytecode = True
 from . import exchange as X, ledger as L, orders as O
 
 A_ENTRY, A_ENTRY_END, A_EXIT, A_EXIT_END = (21, 0), (21, 5), (22, 55), (23, 0)   # UTC
+A_EARLIEST = (20, 50)                  # an A command started before this (UTC) is a late catch-up from the night before
+                                       # (e.g. a laptop waking after midnight), never the start of this evening's window
 B_LIMIT_MINUTES = 15                   # B: limit at the touch for this long, then market (rule 2.2)
 A_LEVERAGE = 3                         # A: 1x notional on ~1/3 collateral (rule 4.3 / 6.1.2)
 B_BUY_BUFFER = 0.001                   # keep 0.1% of USDT back on a spot buy (price can tick up before the fill)
@@ -49,6 +53,16 @@ def wait_until(t, a, max_wait=120):
 def today_utc(): return utcnow().strftime("%Y-%m-%d")
 def at(h, m, d=None): return (d or utcnow()).replace(hour=h, minute=m, second=0, microsecond=0)
 def ts(dt): return dt.timestamp()
+
+
+def a_too_early(cmd, now, a):
+    """True (and an alert) when an A command starts before 20:50 UTC. Without this, a run that starts late, after
+    midnight, would take the NEW day as its window: a-precheck/a-enter could open a buy loop lasting until 21:05.
+    Test runs with --deadline-min, and dry runs of the pre-check, are exempt (they never reach the real accounts)."""
+    if a.deadline_min or now >= at(*A_EARLIEST, now): return False
+    L.alert(cmd, f"started at {now:%H:%M} UTC, before the 20:55-21:05 window: nothing done (a late catch-up after "
+                 f"midnight must not open the new day's window)", "WARN")
+    return True
 
 
 # ---------------------------------------------------------------- clients (real demo or dry-run fake)
@@ -230,6 +244,7 @@ def cmd_b_check(v, a, run):
 def cmd_a_precheck(v, a, run):
     """20:55 UTC. Live price vs SMA200 of closes up to yesterday. Writes today's decision; places no orders."""
     day = today_utc(); run.day = day
+    if not v.dry and a_too_early("a-precheck", utcnow(), a): run.status = "NO_TRADE"; run.note = "too early"; return 1
     px, src = live_price(v.dry)
     s = signal_state(live_price=px)
     if px is None: s["warnings"].append(f"dry run offline: used stored close ({src})")
@@ -259,6 +274,7 @@ def a_row(day):
 def cmd_a_enter(v, a, run):
     """21:00 UTC. Post-only buy at the best bid, re-posted as the bid rises, cancelled at 21:05. Never market."""
     day = today_utc(); run.day = day; now = utcnow()
+    if a_too_early("a-enter", now, a): run.status = "NO_TRADE"; run.note = "too early"; return 1
     row = a_row(day)
     if row and row["status"] in ("ENTERED", "UNFILLED", "CLOSED", "STILL_OPEN", "MISSED_MACHINE_OFF", "ERROR"):
         L.alert("a-enter", f"a-enter already ran today (status {row['status']}): not entering again", "WARN"); run.note = "already ran"; return 0
@@ -309,7 +325,19 @@ def cmd_a_exit(v, a, run, emergency=False):
     day = today_utc(); run.day = day; now = utcnow()
     end = now + timedelta(minutes=a.deadline_min) if a.deadline_min else at(*A_EXIT_END)
     if emergency: end = now
+    entry_t = at(*A_ENTRY)                      # start of the window this exit belongs to (for funding)
+    overdue = not a.deadline_min and not emergency and now < at(*A_EARLIEST, now)
+    if overdue:
+        # started after midnight: any position is left from YESTERDAY's window (it should have closed at 23:00).
+        # Book it to that day and close at market now, instead of posting a sell until 23:00 of the new day.
+        prev = now - timedelta(days=1); day = prev.strftime("%Y-%m-%d"); run.day = day
+        entry_t = at(*A_ENTRY, prev); end = now
     pos = O.futures_position(v.fut); row = a_row(day) or {}
+    if overdue and pos["qty"] <= 0:
+        print(f"A: exit started at {now:%H:%M} UTC, outside the window, and A is flat: nothing to do."); run.note = "flat"; return 0
+    if overdue:
+        L.alert("a-exit", f"exit started at {now:%H:%M} UTC with {pos['qty']} BTC still open from {day}'s window "
+                          f"(held past 23:00): closing at market now", "WARN")
     if pos["qty"] <= 0:
         if row.get("status") == "ENTERED":
             L.alert("a-exit", "a_windows says ENTERED but no position found: check the account"); return 1
@@ -320,7 +348,7 @@ def cmd_a_exit(v, a, run, emergency=False):
         print(f"A {day}: nothing to exit (position 0, day status {row.get('status', 'none')})."); run.note = "flat"; return 0
     if now > at(*A_EXIT_END) and not a.deadline_min and not emergency:
         L.alert("a-exit", f"exit started at {now:%H:%M} UTC, after 23:00: closing at market immediately", "WARN"); end = now
-    if not emergency: wait_until(at(*A_EXIT), a)
+    if not emergency and not overdue: wait_until(at(*A_EXIT), a)
     b0 = O.book(v.fut); rb0 = O.real_book(True); qty = v.ff.qty(pos["qty"])
     if a.deadline_min and not emergency: end = utcnow() + timedelta(minutes=a.deadline_min)
     print(f"A {day} exit at {now:%H:%M:%S} UTC: SELL {qty} BTC post-only at the ask ({b0['ask']:,.2f}) until {end:%H:%M} UTC, then market")
@@ -339,7 +367,7 @@ def cmd_a_exit(v, a, run, emergency=False):
     exit_avg = O.avg_price(fills) if fills else 0.0
     exit_fees = sum(O.fee_usdt(t, v.spot) for t in fills); realized = sum(t["realized_pnl"] for t in fills)
     try:
-        funding = O.funding_paid(v.fut, int(at(*A_ENTRY).timestamp() * 1000), int(time.time() * 1000))
+        funding = O.funding_paid(v.fut, int(entry_t.timestamp() * 1000), int(time.time() * 1000))
     except X.ExchangeError:
         funding = 0.0
     entry_fees = float(row.get("fees_usdt") or 0); entry_avg = float(row.get("entry_avg") or 0); entry_qty = float(row.get("entry_filled") or qty)
@@ -352,7 +380,8 @@ def cmd_a_exit(v, a, run, emergency=False):
              fees_usdt=entry_fees + exit_fees, funding_usdt=funding, pnl_usdt=pnl, pnl_bp=(pnl / notional * 1e4) if notional else None,
              real_mid_2100=row.get("real_mid_2100"), real_mid_2300=rb0 and rb0["mid"], demo_mid_2100=row.get("demo_mid_2100"), demo_mid_2300=b0["mid"],
              n_orders=int(row.get("n_orders") or 0) + len(r["orders"]) + (1 if exit_type != "MAKER" else 0),
-             note=("EMERGENCY flatten; " if emergency else "") + f"exit {exit_type}; {len(fills)} fill(s)")
+             note=("EMERGENCY flatten; " if emergency else "") + (f"OVERDUE exit at {now:%Y-%m-%d %H:%M}; " if overdue else "")
+                  + f"exit {exit_type}; {len(fills)} fill(s)")
     L.append("equity", strategy="A", equity_usdt=fa["equity"], btc=pos2["qty"], usdt=fa["wallet"], price=exit_avg, note="after exit")
     print(f"exit result: sold {sum(t['qty'] for t in fills)} @ {exit_avg:,.2f} ({exit_type}); P&L {pnl:+.2f} USDT ({(pnl / notional * 1e4) if notional else 0:+.1f} bp) "
           f"after fees {entry_fees + exit_fees:.4f}; equity {fa['equity']:,.2f}; position now {pos2['qty']}")
