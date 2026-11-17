@@ -7,7 +7,14 @@
 #                                           every scheduled command; does nothing while DO_HOST is unset)
 #   bash deploy/digitalocean/do.sh status   containers, health inside the Droplet, and what the public URL answers
 #   bash deploy/digitalocean/do.sh ssh      a shell on the Droplet as `deploy`
-# Settings in the project .env: DO_HOST=<droplet IPv4>, DO_SITE=<domain, or <ip-with-dashes>.sslip.io>.
+# The bot on the Droplet (README "Bot on the Droplet"):
+#   bash deploy/digitalocean/do.sh bot-keys copy ~/.config/btc-bot/secrets.env to the Droplet (600, never printed)
+#   bash deploy/digitalocean/do.sh bot-on   Droplet takes over: ledgers writable by the bot, sync user off, schedule on
+#   bash deploy/digitalocean/do.sh bot-off  undo bot-on (schedule off, sync user back); then re-enable the laptop tasks
+#   bash deploy/digitalocean/do.sh bot CMD  run one bot command on the Droplet now (e.g. `status`) and show its log
+#   bash deploy/digitalocean/do.sh pull     copy the Droplet's candles, ledgers and logs into the laptop's data/
+# Settings in the project .env: DO_HOST=<droplet IPv4>, DO_SITE=<domain, or <ip-with-dashes>.sslip.io>,
+# DO_BOT_ON_SERVER=1 once the Droplet runs the bot (then `sync` never uploads, so the laptop cannot overwrite it).
 set -uo pipefail
 cd "$(dirname "$0")/../.." || exit 1
 
@@ -20,6 +27,8 @@ env_get() { grep -E "^$1=" .env 2>/dev/null | tail -1 | cut -d= -f2- | tr -d '\r
 HOST="${DO_HOST:-$(env_get DO_HOST)}"
 SITE="${DO_SITE:-$(env_get DO_SITE)}"
 [ -z "$SITE" ] && [ -n "$HOST" ] && SITE="${HOST//./-}.sslip.io"
+BOT_ON_SERVER="${DO_BOT_ON_SERVER:-$(env_get DO_BOT_ON_SERVER)}"
+SECRETS="$HOME/.config/btc-bot/secrets.env"
 SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=15 -o ServerAliveCountMax=4)
 
 die() { echo "do.sh: $*" >&2; exit 1; }
@@ -74,6 +83,7 @@ REMOTE
 
 cmd_sync() {
   [ -n "$HOST" ] || exit 0                       # mirror not configured: nothing to do
+  [ "$BOT_ON_SERVER" = 1 ] && exit 0             # the Droplet writes the ledgers now: never overwrite them from here
   need_host
   [ -f "$SYNC_KEY" ] || die "no sync key ($SYNC_KEY): run do.sh keys"
   cd data || die "no data folder"
@@ -94,6 +104,60 @@ cmd_status() {
   echo "https://$SITE/ answers $code (401 = login required, as intended; 503 = no login set yet)"
 }
 
+cmd_bot_keys() {
+  need_host
+  [ -f "$SECRETS" ] || die "no $SECRETS on this machine"
+  # streamed over SSH into a 600 file; the values are never printed, only the key names are shown back
+  admin 'umask 077; mkdir -p ~/.config/btc-bot && cat > ~/.config/btc-bot/secrets.env.new \
+    && mv ~/.config/btc-bot/secrets.env.new ~/.config/btc-bot/secrets.env && chmod 600 ~/.config/btc-bot/secrets.env \
+    && echo "keys on the Droplet (names only):" && sed -E "s/=.*/=<set>/" ~/.config/btc-bot/secrets.env | grep -v "^#" | grep .' \
+    < "$SECRETS" || die "copying the keys failed"
+}
+
+cmd_bot_on() {
+  need_host
+  admin bash -s -- "$REMOTE_DIR/$HERE" <<'REMOTE' || die "bot-on failed"
+set -euo pipefail
+cd "$1"
+[ -f ~/.config/btc-bot/secrets.env ] || { echo "no keys on the Droplet: run do.sh bot-keys first"; exit 1; }
+sudo chown -R deploy:deploy /srv/btc-data            # the bot container runs as uid 1000 (= deploy) and writes here now
+if sudo test -f /home/btcsync/.ssh/authorized_keys; then  # the laptop no longer uploads: switch its login off
+  sudo mv /home/btcsync/.ssh/authorized_keys /home/btcsync/.ssh/authorized_keys.disabled
+fi
+{ (crontab -l 2>/dev/null || true) | sed '/>>> btc-bot schedule/,/<<< btc-bot schedule/d'; cat bot.crontab; } | crontab -
+echo "--- crontab of deploy now:"; crontab -l
+REMOTE
+}
+
+cmd_bot_off() {
+  need_host
+  admin bash -s <<'REMOTE' || die "bot-off failed"
+set -euo pipefail
+(crontab -l 2>/dev/null || true) | sed '/>>> btc-bot schedule/,/<<< btc-bot schedule/d' | crontab -
+echo "--- crontab of deploy now:"; crontab -l 2>/dev/null || echo "(empty)"
+if sudo test -f /home/btcsync/.ssh/authorized_keys.disabled; then
+  sudo mv /home/btcsync/.ssh/authorized_keys.disabled /home/btcsync/.ssh/authorized_keys
+fi
+sudo chown -R btcsync:btcsync /srv/btc-data
+REMOTE
+  echo "Schedule off on the Droplet. To hand back to the laptop: do.sh pull, remove DO_BOT_ON_SERVER from .env, then"
+  echo "PowerShell: Get-ScheduledTask -TaskName 'BTC bot*' | Enable-ScheduledTask"
+}
+
+cmd_bot() {
+  need_host
+  [ $# -ge 1 ] || die "usage: do.sh bot <command> [args]"
+  admin "bash $REMOTE_DIR/$HERE/bot-run.sh $(printf '%q ' "$@"); rc=\$?; tail -n 40 /srv/btc-data/paper/logs/$1.log; exit \$rc"
+}
+
+cmd_pull() {
+  need_host
+  [ "$BOT_ON_SERVER" = 1 ] || die "the laptop is still the source (DO_BOT_ON_SERVER is not 1 in .env): pulling would overwrite newer laptop files"
+  rsync -rtz --exclude 'paper/dryrun/' -e "ssh -i $ADMIN_KEY ${SSH_OPTS[*]}" "deploy@$HOST:/srv/btc-data/" data/ \
+    || die "pull from $HOST failed"
+  echo "$(date -u +%FT%TZ) pulled candles, ledgers and logs from $HOST into data/"
+}
+
 case "${1:-}" in
   keys) cmd_keys ;;
   wait) cmd_wait ;;
@@ -101,5 +165,10 @@ case "${1:-}" in
   sync) cmd_sync ;;
   status) cmd_status ;;
   ssh) need_host; ssh -i "$ADMIN_KEY" -o StrictHostKeyChecking=accept-new "deploy@$HOST" ;;
-  *) sed -n '2,10p' "$0"; exit 2 ;;
+  bot-keys) cmd_bot_keys ;;
+  bot-on) cmd_bot_on ;;
+  bot-off) cmd_bot_off ;;
+  bot) shift; cmd_bot "$@" ;;
+  pull) cmd_pull ;;
+  *) sed -n '2,18p' "$0"; exit 2 ;;
 esac

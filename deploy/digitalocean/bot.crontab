@@ -1,0 +1,10 @@
+# >>> btc-bot schedule (installed by deploy/digitalocean/do.sh bot-on; removed by do.sh bot-off) >>>
+# UTC; the Droplet clock is Etc/UTC. Same commands as scheduler/install_tasks.ps1 on the laptop. a-enter and a-exit
+# start a minute early and the harness waits for 21:00:00 / 22:55:00 (it accepts up to 2 minutes early).
+CRON_TZ=UTC
+1 0 * * *   bash /opt/btc-strategy/deploy/digitalocean/bot-run.sh b-check
+55 20 * * * bash /opt/btc-strategy/deploy/digitalocean/bot-run.sh a-precheck
+59 20 * * * bash /opt/btc-strategy/deploy/digitalocean/bot-run.sh a-enter
+54 22 * * * bash /opt/btc-strategy/deploy/digitalocean/bot-run.sh a-exit
+10 23 * * * bash /opt/btc-strategy/deploy/digitalocean/bot-run.sh dashboard
+# <<< btc-bot schedule <<<

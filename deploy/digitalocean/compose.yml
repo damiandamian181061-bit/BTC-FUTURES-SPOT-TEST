@@ -49,6 +49,25 @@ services:
     cpus: 0.5
     restart: unless-stopped
 
+  # The trading bot itself, one command per run (never a long-running container). Started only by bot-run.sh from
+  # the deploy user's crontab (bot.crontab), so `docker compose up` never starts it. Same image as the app; it
+  # writes the ledgers in /srv/btc-data (the app above reads them read-only) and reads the Binance Demo keys
+  # from a file outside the repo, mounted read-only.
+  bot:
+    profiles: ["bot"]
+    image: btc-strategy-app:latest
+    environment:
+      BTC_BOT_ROOT: /app
+      BTC_BOT_DATA_DIR: /app/data
+      BTC_BOT_PAPER_DIR: /app/data/paper
+      BTC_BOT_CHARTS_DIR: /app/charts
+      BTC_BOT_SECRETS: /run/secrets/btc-bot.env
+    volumes:
+      - ${DATA_DIR:-/srv/btc-data}:/app/data
+      - ${BOT_SECRETS_FILE:-/nonexistent}:/run/secrets/btc-bot.env:ro
+    mem_limit: 768m
+    cpus: 1.0
+
 volumes:
   caddy_data: {}
   caddy_config: {}
