@@ -205,8 +205,8 @@ disagree on 11 of 2,404 days.
 | B + A whole period | +79.2%/yr, Sharpe 1.29 | +75.9%/yr, Sharpe 1.25 |
 
 B was never affected (it already used yesterday's close). Since step 3 (16 Nov 2026) `backtest.py` and `fresh_oos.py`
-use the corrected filter via `signals.py` (`--original-filter` reproduces the old figures). `STRATEGY_WRITEUP.md` still
-shows the original figures. **This file is the reference.**
+use the corrected filter via `signals.py` (`--original-filter` reproduces the old figures). `docs/STRATEGY_WRITEUP.md`
+still shows the original figures. **This file is the reference.**
 
 Residual check: the proxy (20:00 candle close = price at 21:00) is 5 minutes after the 20:55 decision. Using the
 19:00 candle close (price at 20:00, an hour before) instead: A whole period +13.1%/yr (vs +13.0%), out of sample
@@ -266,7 +266,7 @@ Residual check: the proxy (20:00 candle close = price at 21:00) is 5 minutes aft
 
 | Date | Version | Change | Reason |
 |---|---|---|---|
-| 16 Nov 2026 | 1.0 | Rules as decided in the research chat (PROJECT_CONTEXT.md) | |
+| 16 Nov 2026 | 1.0 | Rules as decided in the research phase (`docs/STRATEGY_WRITEUP.md`) | |
 | 16 Nov 2026 | 1.1 | A's filter = 20:55 price vs SMA200 of closes up to yesterday (was: day's own close vs SMA200) | Original used information from after the trade (look-ahead). All A and B+A numbers restated |
 | 16 Nov 2026 | 1.1 | Added sizing open problem (4.3), A probation status, local-time table | Found while writing the rules / from the Aug-Nov holdout |
 | 16 Nov 2026 | 1.1 | No rule change. `signals.py` implements sections 2.1 and 3.1; backtest.py / fresh_oos.py now use it | Step 3 |

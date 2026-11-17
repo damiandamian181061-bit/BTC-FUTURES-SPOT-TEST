@@ -17,7 +17,7 @@ Sections (B and A are kept separate, plus a combined total):
 "Expected" = the backtest maths (fresh_oos.build, the same code as backtest.py, signals from signals.py) run on the
 actual candles of the same days. Paper minus expected therefore measures EXECUTION (fills, slippage, fees), not
 whether the strategy works; the strategy itself is judged by the holdout report (fresh_oos.py).
-Demo-book and real-book slippage are shown side by side: the go/no-go reads the REAL-book columns (HANDOVER_STEP5 s.7).
+Demo-book and real-book slippage are shown side by side: the go/no-go reads the REAL-book columns (STRATEGY_RULES.md 6.2).
 """
 import argparse, csv, html, json, sys
 from datetime import datetime, timedelta, timezone
@@ -523,7 +523,7 @@ def render_html(r):
     H.append('<div class="card"><h2>5. Kill switches and review triggers (STRATEGY_RULES.md 6.2)</h2>')
     rows = [[esc(t), esc(act), esc(v), badge(KILL_LABEL[s], s)] for t, act, v, s in r["kill"]]
     H.append(table(["trigger", "action if hit", "current reading", "status"], rows, "kill"))
-    H.append('<p class="muted small">Go/no-go for A is read after 90 days of paper trading (HANDOVER_STEP5 s.8.5). WATCH = below the line but too few trades to call. '
+    H.append('<p class="muted small">Go/no-go for A is read after 90 days of paper trading (STRATEGY_RULES.md 6.2). WATCH = below the line but too few trades to call. '
              'The simulated quarters above are context from the holdout, not paper results.</p></div>')
     # operations
     H.append('<div class="card"><h2>6. Operations</h2><div class="tiles">')

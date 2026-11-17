@@ -1,5 +1,5 @@
 """
-Data feed for the BTC trend + evening-window system (step 2 of PROJECT_CONTEXT.md).
+Data feed for the BTC trend + evening-window system.
 
 What it does
   1. Reads data/btc_1h.csv and finds the last stored hour.

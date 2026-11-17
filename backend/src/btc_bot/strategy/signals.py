@@ -1,5 +1,5 @@
 """
-Signal engine for the BTC trend + evening-window system (step 3 of PROJECT_CONTEXT.md).
+Signal engine for the BTC trend + evening-window system.
 Implements STRATEGY_RULES.md v1.1 sections 2.1 and 3.1. The bot AND the backtest both use this file,
 so the two cannot drift apart.
 

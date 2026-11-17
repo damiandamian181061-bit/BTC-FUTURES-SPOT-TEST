@@ -24,7 +24,7 @@ H = S.load_hourly(DATA_DIR / "btc_1h.csv")
 DC = S.daily_closes(H)
 RESEARCH_END = "2026-07-31"
 T = lambda s: pd.Timestamp(s, tz="UTC")
-# days where the corrected A filter differs from the original look-ahead one (found 16 Nov 2026, HANDOVER_STEP2 s.7)
+# days where the corrected A filter differs from the original look-ahead one (found 16 Nov 2026, STRATEGY_RULES.md section 5)
 KNOWN_DIFF_DAYS = ["2021-09-08", "2021-09-12", "2021-12-28", "2023-01-13", "2023-08-17", "2024-07-13",
                    "2024-08-26", "2024-09-30", "2025-03-12", "2025-03-20", "2026-08-19"]
 
@@ -91,7 +91,7 @@ class T3_hand_checked(unittest.TestCase):
         self.assertAlmostEqual(self.indep(day, 200)[1], sma200, places=2)
 
     def test_b_crossings(self):
-        self.check_b("2026-08-01", 62887.88, 63439.78, 0)   # research data's last state: CASH (PROJECT_CONTEXT)
+        self.check_b("2026-08-01", 62887.88, 63439.78, 0)   # research data's last state (31 Jul 2026): CASH
         self.check_b("2026-08-03", 63570.00, 63406.89, 1)   # crosses up: LONG
         self.check_b("2026-10-23", 81416.09, 81824.18, 0)   # crosses down after the Aug-Oct run: CASH
         self.check_b("2026-11-16", 65351.05, 79843.77, 0)   # today (handover: SMA50 79,844)

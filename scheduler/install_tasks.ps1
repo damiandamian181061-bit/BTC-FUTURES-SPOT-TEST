@@ -1,7 +1,9 @@
 # Installs the five Windows Task Scheduler tasks that run the paper-trading bot through WSL
 # (four harness commands + the 23:10 UTC dashboard, which only reads the logs and rewrites data/paper/dashboard.html).
 # Run ONCE in PowerShell (not as administrator; plain PowerShell is fine):
-#   powershell -ExecutionPolicy Bypass -File "C:\Users\damia\Documents\BTC Strategy Project\scheduler\install_tasks.ps1"
+#   powershell -ExecutionPolicy Bypass -File "<project folder>\scheduler\install_tasks.ps1"
+# Since 17 Nov 2026 the schedule runs on the DigitalOcean Droplet instead (deploy/digitalocean/README.md). These tasks
+# are disabled on the laptop and are only for switching back: never have both schedules on at once.
 # Safe to re-run: existing tasks are replaced. Remove them with uninstall_tasks.ps1.
 #
 # Times are UTC (the trailing Z in StartBoundary = "synchronize across time zones"), so the BST change does not shift them.
@@ -13,8 +15,8 @@
 # Task names must not contain ':' (a task is stored as a file under %SystemRoot%\System32\Tasks, so file-name rules
 # apply): "BTC bot - b-check 00:01 UTC" failed with "The parameter is incorrect" on 16 Nov 2026; dots are used instead.
 
-$proj = "C:\Users\damia\Documents\BTC Strategy Project"
-$wslProj = "/mnt/c/Users/damia/Documents/BTC Strategy Project"
+$proj = Split-Path -Parent $PSScriptRoot                     # the project folder (this script lives in <project>\scheduler)
+$wslProj = "/mnt/" + $proj.Substring(0, 1).ToLower() + $proj.Substring(2).Replace('\', '/')   # C:\x\y -> /mnt/c/x/y
 $wsl = (Get-Command wsl.exe).Source
 $user = "$env:USERDOMAIN\$env:USERNAME"
 $tomorrow = (Get-Date).ToUniversalTime().AddDays(1).ToString("yyyy-MM-dd")

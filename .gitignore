@@ -28,7 +28,22 @@ wsl session step 4.txt
 .idea/
 Thumbs.db
 .DS_Store
+
+# secrets: never in git (keys live in ~/.config/btc-bot/secrets.env, outside the project)
 .env
+.env.*
+!.env.example
+secrets.env
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+btc_droplet*
+
+# working notes kept on the laptop only (chat handovers and project history; the repo has the rules and write-up)
+HANDOVER_*.md
+PROJECT_CONTEXT.md
+/STRATEGY_WRITEUP.md
 
 # DigitalOcean deploy: rendered cloud-init (holds this laptop's public keys) and the server's login hash
 deploy/digitalocean/*.local.yml

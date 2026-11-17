@@ -10,7 +10,7 @@ Prints: strategy returns on the holdout, Strategy A trade stats vs the backtest,
 count, a monthly table, where the holdout sits in the distribution of same-length windows from the
 2023-26 out-of-sample period, and the current B / A signal state. Draws charts/holdout_equity.png.
 Step 3 (16 Nov 2026): signals now come from signals.py, with the corrected (live-feasible) A filter.
-  --original-filter reproduces the old look-ahead numbers (HANDOVER_STEP2.md section 6).
+  --original-filter reproduces the old look-ahead numbers (STRATEGY_RULES.md section 5).
 """
 import argparse, sys
 from pathlib import Path
