@@ -4,6 +4,9 @@
 # Runs one bot command from the project folder with the backend package on the path, and appends everything it
 # prints to data/paper/logs/<command>.log. `dashboard` rebuilds the report; every other word is a harness command.
 export PYTHONDONTWRITEBYTECODE=1
+# Write each line to the log as it is printed, so a run that gets killed (e.g. by sleep or wake) still shows how far
+# it got. Python holds back output sent to a file until the end otherwise (17 Nov 2026: two runs left only "start").
+export PYTHONUNBUFFERED=1
 cd "$(dirname "$0")/.." || exit 1
 export PYTHONPATH="$PWD/backend/src${PYTHONPATH:+:$PYTHONPATH}"
 mkdir -p data/paper/logs

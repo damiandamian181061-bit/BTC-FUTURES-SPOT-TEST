@@ -66,7 +66,7 @@ if [ ! -s auth.caddy ]; then
   echo "no login yet: the site answers 503 until set-password.sh is run"
 fi
 docker compose up -d --build --remove-orphans
-docker image prune -f >/dev/null
+docker image prune -f --filter label=com.docker.compose.project=btc-dashboard >/dev/null   # ours only: never other projects'
 docker compose ps
 REMOTE
   cmd_sync

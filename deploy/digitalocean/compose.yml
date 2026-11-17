@@ -25,6 +25,9 @@ services:
       - ${DATA_DIR:-/srv/btc-data}:/app/data:ro
     expose:
       - "8000"
+    # Shares the Droplet with btc-options-lab: hard caps so this app can never starve it (uses ~160 MB, <1% CPU).
+    mem_limit: 768m
+    cpus: 1.0
     restart: unless-stopped
 
   caddy:
@@ -42,6 +45,8 @@ services:
       - ./auth.caddy:/etc/caddy/auth.caddy:ro
       - caddy_data:/data
       - caddy_config:/config
+    mem_limit: 128m
+    cpus: 0.5
     restart: unless-stopped
 
 volumes:
