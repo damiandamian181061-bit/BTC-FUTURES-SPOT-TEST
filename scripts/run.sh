@@ -17,4 +17,9 @@ mkdir -p data/paper/logs
   rc=$?
   echo "===== $(date -u +%Y-%m-%dT%H:%M:%SZ) end $1 exit $rc"
 } >> "data/paper/logs/$1.log" 2>&1
+# Mirror the candles and logs to the DigitalOcean dashboard (deploy/digitalocean/do.sh). Runs after the command, so it
+# cannot delay a trade; does nothing while DO_HOST is unset in .env; never changes this run's exit code.
+if [ -f deploy/digitalocean/do.sh ]; then
+  timeout 120 bash deploy/digitalocean/do.sh sync >> data/paper/logs/sync.log 2>&1 || true
+fi
 exit $rc

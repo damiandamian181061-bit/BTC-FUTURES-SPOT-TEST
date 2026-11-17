@@ -73,7 +73,11 @@ def render_dashboard():
     with _lock:
         _cache.clear()
     r = _dashboard_result(14)
-    return {"html": str(D.write_html(r)), "json": str(D.write_json(r)), "generated_utc": r["now"].isoformat()}
+    try:
+        html, js = D.write_html(r), D.write_json(r)
+    except OSError as e:                          # e.g. the DigitalOcean mirror mounts data/ read-only
+        raise HTTPException(503, f"cannot write the dashboard files here: {e.strerror or e}") from e
+    return {"html": str(html), "json": str(js), "generated_utc": r["now"].isoformat()}
 
 
 @app.get("/api/signals", tags=["signals"])

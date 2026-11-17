@@ -29,3 +29,7 @@ wsl session step 4.txt
 Thumbs.db
 .DS_Store
 .env
+
+# DigitalOcean deploy: rendered cloud-init (holds this laptop's public keys) and the server's login hash
+deploy/digitalocean/*.local.yml
+deploy/digitalocean/auth.caddy

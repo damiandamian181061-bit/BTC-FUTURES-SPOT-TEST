@@ -1,0 +1,49 @@
+# The dashboard mirror on a DigitalOcean Droplet: the same image as the laptop, behind Caddy (HTTPS + password).
+# On the Droplet, from /opt/btc-strategy/deploy/digitalocean (deploy/digitalocean/do.sh push does all of this):
+#   docker compose up -d --build        build the image from the copied code and start app + caddy
+#   docker compose logs -f              follow both logs
+#   bash set-password.sh                set or change the dashboard login
+# Settings come from .env next to this file (written by do.sh push): SITE_ADDRESS=<name the certificate is for>.
+#
+# What is NOT here, on purpose: no API keys (so /api/accounts answers 503) and no bot. Trading stays on the laptop;
+# the laptop copies the candles and paper logs into /srv/btc-data after each scheduled run (do.sh sync), and the app
+# reads them read-only.
+name: btc-dashboard
+
+services:
+  app:
+    build:
+      context: ../..
+    image: btc-strategy-app:latest
+    environment:
+      BTC_BOT_ROOT: /app
+      BTC_BOT_DATA_DIR: /app/data
+      BTC_BOT_PAPER_DIR: /app/data/paper
+      BTC_BOT_CHARTS_DIR: /app/charts
+      BTC_BOT_SECRETS: /run/no-secrets-on-this-server
+    volumes:
+      - ${DATA_DIR:-/srv/btc-data}:/app/data:ro
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.10.2-alpine
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in deploy/digitalocean/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./auth.caddy:/etc/caddy/auth.caddy:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data: {}
+  caddy_config: {}

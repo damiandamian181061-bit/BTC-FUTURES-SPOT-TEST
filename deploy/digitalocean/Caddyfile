@@ -1,0 +1,15 @@
+# HTTPS in front of the dashboard app. SITE_ADDRESS is a domain name pointing at the Droplet, or <ip-with-dashes>.sslip.io
+# when there is no domain; Caddy gets and renews the Let's Encrypt certificate by itself.
+# auth.caddy holds the login (set-password.sh writes it). Until a password is set it answers 503 to everything.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy no-referrer
+		-Server
+	}
+	import /etc/caddy/auth.caddy
+	reverse_proxy app:8000
+}
