@@ -41,6 +41,9 @@ those ledgers read-only and has no access to the keys. The bot only ever trades 
 | 22:55 | `a-exit` | post-only sell until 23:00, then market for any rest |
 | 23:10 | `dashboard` | rebuild the report from the ledgers |
 
+After each run, `btc-bot notify` sends a Telegram message for problems (alerts, failed runs) and trades, plus a daily
+summary after the 23:10 run that also works as a heartbeat.
+
 ## Guides
 
 | Guide | Read it for |

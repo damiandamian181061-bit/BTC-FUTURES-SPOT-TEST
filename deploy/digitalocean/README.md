@@ -68,6 +68,19 @@ schedule moved to the always-on Droplet. That makes the Droplet the source of th
   laptop any more (even `status` writes rows): use `bash deploy/digitalocean/do.sh bot status`.
 - **Checks:** `do.sh status` (site), `do.sh bot status` (accounts and last runs, read-only),
   `do.sh bot connection-check`.
+- **Telegram messages** (since 17 Nov 2026): after each of the five scheduled commands, `bot-run.sh` starts a second
+  one-off container with `btc-bot notify after-run` (`backend/src/btc_bot/reporting/notify.py`). It sends problems
+  (every ERROR/WARN alert, or a non-zero exit with the last log lines) and trades (B switch, A entry or unfilled, A
+  close) at once, plus a daily summary after the 23:10 dashboard run. **No daily message by ~23:15 UTC means the
+  server or its schedule is down.** If the notifier container fails too, `bot-run.sh` sends a short message with
+  `curl` from the host. Settings: `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in the same secrets file as the keys.
+  Without a token the step is skipped.
+  - Set up once on the laptop (WSL, interactive: hidden token prompt, then press Start on the bot in Telegram):
+    `PYTHONPATH=backend/src python3 -m btc_bot notify setup`, then `bash deploy/digitalocean/do.sh bot-keys`.
+  - Test from the server: `bash deploy/digitalocean/do.sh bot notify test`.
+  - Preview without sending: on the Droplet, in this folder,
+    `docker compose --profile bot run --rm -T --no-deps bot btc-bot notify after-run --command dashboard --rc 0 --since 2026-11-17T23:10:00Z --print-only`.
+  - Turn off: remove the two lines from the secrets file (laptop) and run `do.sh bot-keys` again.
 
 **Rollback to the laptop** (do it at **23:20-23:50 UTC**, after the evening runs and before b-check). The Windows
 tasks have StartWhenAvailable on, so re-enabling them can start a missed run at once. A late a-precheck/a-enter

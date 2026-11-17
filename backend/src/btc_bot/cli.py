@@ -6,7 +6,8 @@ One entry point for every tool:  btc-bot <command> [options]   (or: python -m bt
   harness            the paper-trading bot: status, setup, b-check, a-precheck, a-enter, a-exit, a-test, flatten, relog
   connection-check   read-only check of both Binance Demo accounts
   dashboard          rebuild data/paper/dashboard.html + dashboard.json from the paper logs
-  api                run the FastAPI server (--host, --port, --reload)
+  notify             Telegram messages: setup (once), test, after-run (called by the server's bot-run.sh)
+  api             run the FastAPI server (--host, --port, --reload)
   backtest           research backtest, 2020 - Jul 2026 (--original-filter, --end)
   holdout            fresh out-of-sample report from 1 Aug 2026 (--start, --end)
   analysis           the original research scans (hour of day, autocorrelation, volume)
@@ -25,6 +26,7 @@ MODULES = {
     "harness": "btc_bot.trading.harness",
     "connection-check": "btc_bot.trading.connection_check",
     "dashboard": "btc_bot.reporting.dashboard",
+    "notify": "btc_bot.reporting.notify",
     "backtest": "btc_bot.research.backtest",
     "holdout": "btc_bot.research.fresh_oos",
     "analysis": "btc_bot.research.analysis",
