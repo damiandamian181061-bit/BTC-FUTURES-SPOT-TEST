@@ -34,6 +34,11 @@ export function StrategyB({ d }: { d: Dashboard }) {
         <Tile label="avg slippage" value={`real ${bp(b.slip_real, 2)}`} sub={`demo ${bp(b.slip_demo, 2)} | negative = better than mid`} />
         <Tile label="days logged" value={String(b.days_logged)} sub={`${b.no_trade} no-trade, ${b.late_runs} late (>30 min), ${b.incomplete} incomplete`} />
       </div>
+      <p className="muted small">
+        Equity counts only the spot account's USDT and BTC, last logged by the bot. Binance's Spot › Assets page also
+        lists the demo account's other coins (BNB, which pays the fees, and the rest); B never trades them, so they are
+        left out on purpose.
+      </p>
       <EquityChart
         title="B: paper equity vs the backtest maths on the same days (growth since paper start)"
         series={[{ key: 'paper', name: 'B paper', pts: b.curve.paper }, { key: 'expected', name: 'B expected (same days)', pts: b.curve.expected }]}

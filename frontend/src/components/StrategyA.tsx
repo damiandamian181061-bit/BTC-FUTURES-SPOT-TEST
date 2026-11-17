@@ -64,6 +64,11 @@ export function StrategyA({ d }: { d: Dashboard }) {
         <Tile label="rolling 90 days" value={bp(a.roll90_bp)} sub={`${a.roll90_n} trade(s) | kill switch: negative two quarters running`} />
         <Tile label="problems" value={String(a.missed + a.errors + a.still_open)} sub={`${a.missed} missed (machine off), ${a.errors} errors, ${a.still_open} still open after 23:00`} />
       </div>
+      <p className="muted small">
+        Equity is the USDT that A trades with (the futures account's USDT margin balance, last logged by the bot).
+        Binance's Futures › Assets page shows a larger Margin Balance because it also counts the demo account's idle
+        USDC and BTC, which A never uses: they are left out on purpose so returns are measured on the money at risk.
+      </p>
       <EquityChart
         title="A: paper equity vs the backtest maths on the same days (growth since paper start)"
         series={[{ key: 'paper', name: 'A paper', pts: a.curve.paper }, { key: 'expected', name: 'A expected (same days)', pts: a.curve.expected }]}
