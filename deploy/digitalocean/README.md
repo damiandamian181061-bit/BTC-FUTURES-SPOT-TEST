@@ -69,7 +69,10 @@ schedule moved to the always-on Droplet. That makes the Droplet the source of th
 - **Checks:** `do.sh status` (site), `do.sh bot status` (accounts and last runs, read-only),
   `do.sh bot connection-check`.
 
-**Rollback to the laptop** (between trading windows, e.g. 00:05-20:50 UTC):
+**Rollback to the laptop** (do it at **23:20-23:50 UTC**, after the evening runs and before b-check). The Windows
+tasks have StartWhenAvailable on, so re-enabling them can start a missed run at once. A late a-precheck/a-enter
+started between 00:00 and 20:55 UTC is treated by the harness as the new day's window (it has no "too early" guard),
+so never re-enable the tasks during the day:
 1. `bash deploy/digitalocean/do.sh bot-off` (schedule off, sync login back).
 2. `bash deploy/digitalocean/do.sh pull`.
 3. Remove `DO_BOT_ON_SERVER` from `.env`.
